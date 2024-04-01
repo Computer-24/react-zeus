@@ -1,14 +1,12 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import Input from "./Input";
 import Button from "./Button";
-import {BE_signIn, BE_signUp} from "../Backend/Queries";
+import {BE_signIn, BE_signUp, getStorageUser} from "../Backend/Queries";
 import {useNavigate} from "react-router-dom";
 import {useDispatch} from "react-redux";
 import {AppDispatch} from "../Redux/store";
 import {authDataType} from "../Types";
-import {Simulate} from "react-dom/test-utils";
-import reset = Simulate.reset;
-import avatarGenerator from "../utils/avatarGenerator";
+import {setUser} from "../Redux/userSlice";
 
 
 const Login = () => {
@@ -20,6 +18,14 @@ const Login = () => {
     const [signInLoading, setSignInLoading] = useState(false)
     const navigate = useNavigate()
     const dispatch = useDispatch<AppDispatch>()
+    const user = getStorageUser()
+
+    useEffect(() => {
+        if (user?.id) {
+            dispatch(setUser(user))
+            navigate("/dashboard")
+        }
+    }, []);
     const resetForm = () => {
         setEmail("")
         setPassword("")
@@ -28,11 +34,11 @@ const Login = () => {
     }
     const handleSignUp = () => {
         const data = {email, password, confirmPassword}
-        auth(data,BE_signUp, setSignUpLoading)
+        auth(data, BE_signUp, setSignUpLoading)
     }
     const handleSignIn = () => {
         const data = {email, password}
-        auth(data, BE_signIn,setSignInLoading)
+        auth(data, BE_signIn, setSignInLoading)
     }
 
     const auth = (

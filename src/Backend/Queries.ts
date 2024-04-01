@@ -1,11 +1,11 @@
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "@firebase/auth"
+import {createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut} from "@firebase/auth"
 import {auth, db} from "./Firebase";
 import {toastError} from "../utils/toast";
 import {catchError} from "../utils/catchError";
 import {authDataType, setLoadingType, userType} from "../Types";
 import {NavigateFunction} from "react-router-dom";
 import {doc, getDoc, serverTimestamp, setDoc, updateDoc} from 'firebase/firestore';
-import {defaultUser, setUser} from "../Redux/userSlice";
+import {defaultUser, setUser, userStorageName} from "../Redux/userSlice";
 import {AppDispatch} from "../Redux/store";
 import convertTime from "../utils/ConverterTime";
 import avatarGenerator from "../utils/avatarGenerator";
@@ -76,18 +76,18 @@ const updateUserInfo = async ({
         id = getStorageUser().id
     }
     if (id) {
-        await updateDoc(doc(db,COLLECTION_USERS,id), {
+        await updateDoc(doc(db, COLLECTION_USERS, id), {
             ...(username && {username}),
             ...(img && {img}),
             ...(isOnline && {isOnline}),
-            ...(isOffline && {isOnline:false}),
+            ...(isOffline && {isOnline: false}),
             lastSeen: serverTimestamp(),
         })
     }
 }
 
-const getStorageUser = () => {
-    const user = localStorage.getItem("superhero_user")
+export const getStorageUser = () => {
+    const user = localStorage.getItem(userStorageName)
     if (user) return JSON.parse(user)
     else return null
 }
@@ -150,4 +150,17 @@ export const BE_signIn = (data: authDataType,
         toastError("Field must not be blank", setLoading)
 
     }
+}
+
+export const BE_signOut = (dispatch: AppDispatch, goTo: NavigateFunction, setLoading: setLoadingType) => {
+    setLoading(true)
+    signOut(auth)
+        .then(async () => {
+            goTo("/auth")
+            await updateUserInfo({isOffline: true})
+            dispatch(setUser(defaultUser))
+            localStorage.removeItem(userStorageName)
+            setLoading(false)
+        })
+        .catch((err) => catchError(err))
 }
